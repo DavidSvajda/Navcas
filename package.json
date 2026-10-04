@@ -45,7 +45,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^5.0.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "concurrently": "^9.0.0",
     "esbuild": "^0.28.2",
     "fast-check": "^4.0.0",
