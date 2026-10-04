@@ -41,6 +41,7 @@ jobs:
       - run: npm run build
       - run: node scripts/check-worker.mjs
       - run: docker build -t navcas:ci .
+      - run: node scripts/check-container.mjs
       - run: docker build -f deploy/backup.Dockerfile -t navcas-backup:ci .
       - run: node scripts/check-backup.mjs
         env:

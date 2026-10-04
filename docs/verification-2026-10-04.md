@@ -1,5 +1,15 @@
 # Ověření Navčas — 4. října 2026
 
+## Doplnění pro bezplatné cloudové nasazení
+
+- Finální lokální sada po doplnění nasazení má **98 úspěšných testů**. Obsahuje skutečnou OIDC validaci podepsaných tokenů přes openid-client; nahrazený je pouze síťový transport testovacího poskytovatele. Testuje chybný podpis/issuer/audience/nonce/expiraci, PKCE, state, replay, revokaci, logout, CSRF a dvě organizace.
+- Všech **36 prohlížečových scénářů prošlo v jednom finálním běhu** (2,7 minuty). Build, typecheck, formát, kontrola tajemství a worker smoke také prošly.
+- [GitHub kontrola commitu 8c33423](https://github.com/DavidSvajda/Navcas/actions/runs/37231455458) úspěšně provedla nativní ARM64 Docker build, načtení sodium-native, spuštění sestaveného workeru a build ARM backup image. Hlavní job také úspěšně dokončil zálohování a obnovu přes restic/pg_dump/pg_restore nad síťovým PostgreSQL 17.
+- Zálohovací test porovnal všechny trvalé řádky mezi zdrojem a cílem, prázdné session/login/limiter tabulky, zachování RLS, tenant izolaci po obnově a odmítnutí zdroje/neprázdné DB jako cíle. Použil lokální šifrované restic repository v izolovaném CI, nikoli zákaznický OCI bucket.
+- Samostatný test sestaveného Dockeru a Caddy s důvěryhodným testovacím CA byl přidán do CI; aktuální výsledek je nutné ověřit u posledního commitu. Testovací certifikát nevydáváme za veřejný ACME certifikát. Skutečná veřejná subdoména, certifikát, Auth0 tenant a Supabase projekt nebyly dosud poskytnuty.
+
+Níže jsou původní kontroly před tímto doplněním; jejich počty nejsou aktuální celkový počet.
+
 Lokální prostředí Windows, Node 22.19.0, npm 11.7.0. Cílový runtime Node 24. CI na GitHubu ověřuje i tento runtime, síťový PostgreSQL 17 a Docker image. Lokální Docker daemon neběžel; samostatný PostgreSQL odmítl start pod administrátorským Windows účtem. Tyto serverové kontroly se proto lokálně nevydávají za úspěšné.
 
 ## Lokálně provedené kontroly

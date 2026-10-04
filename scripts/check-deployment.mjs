@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 const url = new URL(process.argv[2] ?? "");
 if (
   url.protocol !== "https:" ||
+  (url.port && url.port !== "443") ||
   url.pathname !== "/" ||
   url.search ||
   url.hash ||
