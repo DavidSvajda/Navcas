@@ -11,6 +11,7 @@ export function registerRoutes(
   app: FastifyInstance,
   service: WorkspaceBackend,
   production?: ProductionConfig,
+  secureDemo = false,
 ) {
   app.get(
     "/api/health",
@@ -20,6 +21,7 @@ export function registerRoutes(
   app.get("/api/v1/service", async () => ({
     mode: production ? "live" : "demo",
     loginUrl: production ? "/auth/login" : null,
+    secureDemo,
     operator: production
       ? {
           name: production.OPERATOR_NAME,

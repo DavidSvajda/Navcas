@@ -32,6 +32,31 @@ try {
         .string()
         .regex(/^[a-z][a-z0-9_]{0,62}$/)
         .parse(process.env.RUNTIME_DATABASE_ROLE);
+      const runtime = await sql.query(
+        "SELECT rolsuper,rolbypassrls,rolcanlogin FROM pg_roles WHERE rolname=$1",
+        [runtimeRole],
+      );
+      if (
+        !runtime.rows[0] ||
+        runtime.rows[0].rolsuper ||
+        runtime.rows[0].rolbypassrls
+      )
+        throw new Error("Create a separate unprivileged runtime role first.");
+      await sql.query("REVOKE CREATE ON SCHEMA public FROM PUBLIC");
+      const tables =
+        "schema_version,organizations,memberships,sessions,login_flows,workspaces,dataset_revisions,audit_events,rate_buckets";
+      await sql.query(`REVOKE ALL ON ${tables} FROM PUBLIC`);
+      // A dedicated Supabase project must not expose internal application tables via Data API defaults.
+      for (const exposedRole of ["anon", "authenticated", "service_role"]) {
+        if (
+          (
+            await sql.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [
+              exposedRole,
+            ])
+          ).rows.length
+        )
+          await sql.query(`REVOKE ALL ON ${tables} FROM "${exposedRole}"`);
+      }
       // Identifier is allowlisted; customer values always use parameters.
       await sql.query(`GRANT USAGE ON SCHEMA public TO "${runtimeRole}"`);
       await sql.query(

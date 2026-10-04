@@ -11,10 +11,12 @@ export function LegalDialog({
   section,
   close,
   operator,
+  secureDemo = false,
 }: {
   section: LegalSection | null;
   close: () => void;
   operator?: ServiceInfo["operator"];
+  secureDemo?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -122,12 +124,21 @@ export function LegalDialog({
             <>
               <h3>Pouze nezbytné technické použití</h3>
               <p>
-                Cookie <code>{operator ? "__Host-navcas" : "mh_demo"}</code>{" "}
+                Cookie{" "}
+                <code>
+                  {operator
+                    ? "__Host-navcas"
+                    : secureDemo
+                      ? "__Host-navcas-demo"
+                      : "mh_demo"}
+                </code>{" "}
                 uchovává šifrovaný identifikátor pracovní relace po dobu nejvýše
                 dvou hodin. Chrání oddělení pracovního prostoru. Je HttpOnly.{" "}
                 {operator
                   ? "Používá Secure, HTTPS a SameSite=Lax pro návrat z firemního přihlášení. Odhlášení zruší relaci na serveru. Uložené firemní plány zůstávají v databázi."
-                  : "Používá SameSite=Strict. V lokálním HTTP prostředí nepoužívá Secure."}
+                  : secureDemo
+                    ? "Používá Secure, HTTPS a SameSite=Strict. Ukázkové scénáře jsou dočasné a po restartu serveru se smažou."
+                    : "Používá SameSite=Strict. V lokálním HTTP prostředí nepoužívá Secure."}
               </p>
               <p>
                 V sestavené aplikaci může service worker uložit veřejné ikony a

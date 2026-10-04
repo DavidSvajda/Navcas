@@ -5,6 +5,7 @@ await build({
     "apps/api/calculation-worker.ts",
     "apps/api/calculator.ts",
     "scripts/admin.ts",
+    "scripts/backup.ts",
   ],
   outdir: "dist/server",
   bundle: true,

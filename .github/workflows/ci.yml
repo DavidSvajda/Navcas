@@ -8,7 +8,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17
@@ -41,6 +41,11 @@ jobs:
       - run: npm run build
       - run: node scripts/check-worker.mjs
       - run: docker build -t navcas:ci .
+      - run: docker build -f deploy/backup.Dockerfile -t navcas-backup:ci .
+      - run: node scripts/check-backup.mjs
+        env:
+          PG_TEST_HOST: 127.0.0.1
+          PG_TEST_PASSWORD: ci-local-only
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:e2e
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -49,3 +54,16 @@ jobs:
           name: playwright-failure
           path: test-results/
           retention-days: 3
+  arm:
+    name: Native ARM64 Docker and worker
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - run: docker build -t navcas:arm .
+      - run: docker run --rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges navcas:arm node -e "if(process.arch!=='arm64')process.exit(1);require('sodium-native');console.log('ARM64 crypto OK')"
+      - run: docker run --rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges -v "$PWD/scripts/check-worker.mjs:/app/scripts/check-worker.mjs:ro" navcas:arm node scripts/check-worker.mjs
+      - run: docker build -f deploy/backup.Dockerfile -t navcas-backup:arm .
+      - run: docker run --rm --entrypoint pg_dump navcas-backup:arm --version

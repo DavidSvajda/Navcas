@@ -28,7 +28,10 @@ export async function registerSecurity(
   app: FastifyInstance,
   service: WorkspaceBackend,
   limit = 300,
-  production?: { config: ProductionConfig; db: Database },
+  production?: {
+    config: Pick<ProductionConfig, "PUBLIC_ORIGIN" | "SESSION_KEY">;
+    db?: Database;
+  },
 ) {
   await app.register(helmet, {
     global: true,
@@ -53,7 +56,11 @@ export async function registerSecurity(
     referrerPolicy: { policy: "no-referrer" },
   });
   await app.register(secureSession, {
-    cookieName: production ? "__Host-navcas" : "mh_demo",
+    cookieName: production
+      ? production.db
+        ? "__Host-navcas"
+        : "__Host-navcas-demo"
+      : "mh_demo",
     key: production
       ? Buffer.from(production.config.SESSION_KEY, "hex")
       : randomBytes(32),
@@ -61,7 +68,7 @@ export async function registerSecurity(
     cookie: {
       path: "/",
       httpOnly: true,
-      sameSite: production ? "lax" : "strict",
+      sameSite: production?.db ? "lax" : "strict",
       secure: !!production,
       maxAge: SESSION_TTL_MS / 1000,
     },
@@ -71,7 +78,7 @@ export async function registerSecurity(
     timeWindow: 60_000,
     cache: 1000,
     skipOnError: false,
-    ...(production ? { store: postgresRateStore(production.db) } : {}),
+    ...(production?.db ? { store: postgresRateStore(production.db) } : {}),
     keyGenerator: (request) => request.ip,
   });
   app.addHook("onRequest", async (request, reply) => {

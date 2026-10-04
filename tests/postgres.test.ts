@@ -8,6 +8,7 @@ import { demoInput, emptyScenario } from "../fixtures/demo";
 import { productionConfig } from "../apps/api/config";
 import { createApp } from "../apps/api/app";
 import { postgresRateStore } from "../apps/api/pg-rate-store";
+import { assertRuntimeDatabase } from "../apps/api/runtime-database";
 const pg = testDatabase();
 const a = "10000000-0000-4000-8000-000000000001",
   b = "10000000-0000-4000-8000-000000000002";
@@ -38,6 +39,7 @@ beforeAll(async () => {
   await pg.exec(
     "CREATE ROLE app_runtime NOSUPERUSER NOBYPASSRLS; GRANT USAGE ON SCHEMA public TO app_runtime; GRANT SELECT ON organizations,memberships,schema_version TO app_runtime; GRANT SELECT,INSERT,UPDATE,DELETE ON sessions,login_flows,rate_buckets TO app_runtime; GRANT SELECT,UPDATE ON workspaces TO app_runtime; GRANT SELECT,INSERT ON dataset_revisions TO app_runtime; GRANT INSERT ON audit_events TO app_runtime; GRANT USAGE ON SEQUENCE audit_events_id_seq TO app_runtime;",
   );
+  await pg.exec("REVOKE CREATE ON SCHEMA public FROM PUBLIC");
   for (const [id, name] of [
     [a, "Výroba A"],
     [b, "Výroba B"],
@@ -78,6 +80,9 @@ afterAll(async () => {
   await pg.close();
 });
 describe("PostgreSQL authorization, persistence and transactions", () => {
+  it("passes production role preflight with real PostgreSQL catalog and RLS", async () => {
+    await expect(assertRuntimeDatabase(db)).resolves.toBeUndefined();
+  });
   it("does not auto-provision unknown subjects or accept the wrong issuer", async () => {
     await expect(service.authenticate(issuer, "unknown")).rejects.toMatchObject(
       { statusCode: 403 },

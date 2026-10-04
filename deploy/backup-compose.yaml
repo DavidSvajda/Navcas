@@ -1,0 +1,16 @@
+services:
+  backup:
+    build:
+      context: ..
+      dockerfile: deploy/backup.Dockerfile
+    env_file: ../.env.backup
+    read_only: true
+    tmpfs: /tmp:size=1g,mode=1777
+    mem_limit: 1536m
+    cpus: 1
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - ../secrets/db-ca.crt:/run/secrets/db-ca.crt:ro
+      - ../secrets/restic-password:/run/secrets/restic-password:ro
+    command: [backup]

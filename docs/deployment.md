@@ -1,5 +1,7 @@
 # Nasazení Navčas
 
+Pro Oracle Always Free, Supabase, Auth0, bezplatnou HTTPS subdoménu, veřejné syntetické demo a šifrované zálohy použijte také [free-deployment.md](free-deployment.md). Zákaznické nasazení se Supabase používá navíc `deploy/supabase-compose.yaml` pro CA certifikát.
+
 Stav 4. října 2026: kód obsahuje produkční režim s PostgreSQL, OIDC, oprávněními a importem normalizovaného plánu. Není to automatický Flexi konektor. Před spuštěním doplňte vlastní doménu, databázi, poskytovatele identity a skutečné informace provozovatele. Žádné z těchto přístupů není součástí repozitáře.
 
 ## Doporučená první varianta

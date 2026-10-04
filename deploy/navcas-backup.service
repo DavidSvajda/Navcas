@@ -1,0 +1,12 @@
+[Unit]
+Description=Encrypted off-host Navcas database backup
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/navcas
+ExecStart=/usr/bin/docker compose -f deploy/backup-compose.yaml run --rm backup backup
+TimeoutStartSec=45min
+UMask=0077
+

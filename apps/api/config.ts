@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isIP } from "node:net";
 const httpsOrigin = z
   .string()
   .url()
@@ -41,13 +42,66 @@ export const productionSchema = z.object({
   PORT: z.coerce.number().int().min(1024).max(65535).default(3001),
 });
 export type ProductionConfig = z.infer<typeof productionSchema>;
+const publicDemoSchema = productionSchema.pick({
+  PUBLIC_ORIGIN: true,
+  SESSION_KEY: true,
+  TRUST_PROXY: true,
+  PORT: true,
+});
+export type PublicDemoConfig = z.infer<typeof publicDemoSchema>;
+export function publicDemoConfig(env: NodeJS.ProcessEnv): PublicDemoConfig {
+  if (env.DATABASE_URL || env.OIDC_ISSUER || env.OIDC_CLIENT_SECRET)
+    throw new Error(
+      "Public demo must not receive customer database or identity credentials.",
+    );
+  const parsed = publicDemoSchema.safeParse(env);
+  if (!parsed.success)
+    throw new Error(
+      "Public demo requires HTTPS origin, session key and a valid port.",
+    );
+  validateProxy(parsed.data.TRUST_PROXY);
+  return parsed.data;
+}
+function validateProxy(value: string) {
+  if (
+    value &&
+    !value.split(",").every((v) => {
+      const [address, prefix, extra] = v.trim().split("/");
+      const version = isIP(address);
+      if (
+        !version ||
+        extra !== undefined ||
+        address === "0.0.0.0" ||
+        address === "::"
+      )
+        return false;
+      if (prefix === undefined) return true;
+      const bits = Number(prefix);
+      return (
+        /^\d+$/.test(prefix) &&
+        bits >= (version === 4 ? 24 : 64) &&
+        bits <= (version === 4 ? 32 : 128)
+      );
+    })
+  )
+    throw new Error(
+      "TRUST_PROXY must contain explicit IP addresses or CIDR networks.",
+    );
+}
 export function productionConfig(env: NodeJS.ProcessEnv): ProductionConfig {
   const parsed = productionSchema.safeParse(env);
   if (!parsed.success)
     throw new Error(
       `Produkční konfigurace chybí nebo není platná: ${parsed.error.issues.map((i) => i.path.join(".")).join(", ")}. Hodnoty nejsou vypisovány.`,
     );
-  const db = new URL(parsed.data.DATABASE_URL);
+  let db: URL;
+  try {
+    db = new URL(parsed.data.DATABASE_URL);
+  } catch {
+    throw new Error(
+      "DATABASE_URL must be a valid PostgreSQL URL. Values are not logged.",
+    );
+  }
   if (!["postgres:", "postgresql:"].includes(db.protocol))
     throw new Error("DATABASE_URL musí být PostgreSQL.");
   if (
@@ -57,14 +111,6 @@ export function productionConfig(env: NodeJS.ProcessEnv): ProductionConfig {
     throw new Error(
       "Vzdálená databáze vyžaduje sslmode=verify-full a důvěryhodný certifikát.",
     );
-  if (
-    parsed.data.TRUST_PROXY &&
-    !parsed.data.TRUST_PROXY.split(",").every((v) =>
-      /^([\da-f:.]+)(\/\d{1,3})?$/i.test(v.trim()),
-    )
-  )
-    throw new Error(
-      "TRUST_PROXY musí obsahovat explicitní IP adresy nebo CIDR sítě.",
-    );
+  validateProxy(parsed.data.TRUST_PROXY);
   return parsed.data;
 }

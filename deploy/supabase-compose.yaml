@@ -1,0 +1,9 @@
+services:
+  app:
+    volumes:
+      - type: bind
+        source: ../secrets/db-ca.crt
+        target: /run/secrets/db-ca.crt
+        read_only: true
+        bind:
+          create_host_path: false

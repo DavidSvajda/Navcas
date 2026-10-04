@@ -5,6 +5,7 @@ export const brand = {
 export type ServiceInfo = {
   mode: "demo" | "live";
   loginUrl: string | null;
+  secureDemo?: boolean;
   operator: {
     name: string;
     address: string;

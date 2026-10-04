@@ -13,14 +13,17 @@ export async function registerOidc(
   app: FastifyInstance,
   service: PostgresWorkspace,
   config: ProductionConfig,
+  transport: Pick<oidc.DiscoveryRequestOptions, typeof oidc.customFetch> = {},
 ) {
   const client = await oidc.discovery(
     new URL(config.OIDC_ISSUER),
     config.OIDC_CLIENT_ID,
     config.OIDC_CLIENT_SECRET,
     undefined,
-    { timeout: 10 },
+    { timeout: 10, ...transport },
   );
+  // Authorization-code clients may otherwise rely on TLS alone for ID token authenticity.
+  oidc.enableNonRepudiationChecks(client);
   const callback = config.PUBLIC_ORIGIN + "/auth/callback";
   app.get(
     "/auth/login",

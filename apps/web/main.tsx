@@ -1141,6 +1141,7 @@ function App() {
         section={legalSection}
         close={closeLegal}
         operator={serviceInfo?.operator}
+        secureDemo={serviceInfo?.secureDemo}
       />
     </div>
   );
