@@ -1,0 +1,51 @@
+name: Validate application
+on: [push, pull_request]
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: navcas_test
+          POSTGRES_USER: test_owner
+          POSTGRES_PASSWORD: ci-local-only
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U test_owner -d navcas_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run security:scan
+      - run: npm audit --audit-level=moderate
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: node node_modules/vitest/vitest.mjs run tests/postgres.test.ts
+        env:
+          PG_TEST_HOST: 127.0.0.1
+          PG_TEST_PASSWORD: ci-local-only
+      - run: npm run build
+      - run: node scripts/check-worker.mjs
+      - run: docker build -t navcas:ci .
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: playwright-failure
+          path: test-results/
+          retention-days: 3

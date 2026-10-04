@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.npm-cache
+.env
+.env.*
+!.env.example
+*.enc
+*.pem
+*.key
+secrets
+private-data
+artifacts
+test-results
+coverage
